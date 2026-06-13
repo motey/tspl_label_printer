@@ -11,7 +11,7 @@ markdown, barcodes and QR codes.
 > Status: functional. The library, REST API, a mobile-first **web UI** (print + preview +
 > live status), and the optional **Homebox** integration all work. Multi-user/multi-token
 > auth and packaging are still on the roadmap. See
-> [`tspl_printer_service/Project_desc_goals.md`](tspl_printer_service/Project_desc_goals.md)
+> [`docs/design.md`](docs/design.md)
 > for the full design and roadmap.
 
 ---
@@ -88,10 +88,10 @@ node, and a **`PRINTER_USB` selector** telling the service which device to use.
 To create your configuration, copy the documented sample and edit it:
 
 ```sh
-cp tspl_printer_service/sample.env tspl_printer_service/.env
+cp sample.env .env
 ```
 
-[`tspl_printer_service/sample.env`](tspl_printer_service/sample.env) lists every setting with
+[`sample.env`](sample.env) lists every setting with
 its default; only `PRINTER_USB` must be filled in.
 
 ### 1. Find your printer
@@ -137,17 +137,17 @@ sudo usermod -aG plugdev "$USER"
 ```
 
 > Quick alternative for a one-off test: run the command with `sudo` (e.g.
-> `sudo uv run python tspl_printer_service/testbench.py status`). The udev rule is the proper,
+> `sudo uv run labeljetty-testbench status`). The udev rule is the proper,
 > persistent solution and is what you want on an always-on box.
 
 ### 3. Select the printer (`PRINTER_USB`)
 
-Configuration lives in [`tspl_printer_service/.env`](tspl_printer_service/.env). The
+Configuration lives in [`.env`](.env). The
 `PRINTER_USB` variable selects the device. The most robust selector is **vendor:product id**,
 because — unlike a USB bus/address — it survives replugging:
 
 ```sh
-# tspl_printer_service/.env
+# .env
 PRINTER_USB=vid:2d37:pid:62de
 ```
 
@@ -168,7 +168,7 @@ Print the built-in alignment pattern — the surest test that the printer works 
 label geometry is right:
 
 ```sh
-uv run python tspl_printer_service/testbench.py pattern
+uv run labeljetty-testbench pattern
 ```
 
 A correctly configured label shows a border flush to all four edges, with the millimetre
@@ -188,8 +188,8 @@ match your label stock.
 ## Configuration
 
 All settings are read from environment variables (or
-[`tspl_printer_service/.env`](tspl_printer_service/.env) — see
-[`sample.env`](tspl_printer_service/sample.env) for a documented template).
+[`.env`](.env) — see
+[`sample.env`](sample.env) for a documented template).
 
 | Variable                  | Default              | Description                                              |
 | ------------------------- | -------------------- | ------------------------------------------------------- |
@@ -216,7 +216,7 @@ All settings are read from environment variables (or
 From the repository root:
 
 ```sh
-uv run python tspl_printer_service/main.py
+uv run labeljetty
 ```
 
 The service starts the REST API, the **web UI**, and the background print worker. Open
@@ -229,7 +229,7 @@ job queue + printer/worker status live). Interactive API docs (Swagger UI) are s
 
 The UI at `/` covers everything the API does, plus label **profiles** (named sizes via
 `LABEL_PROFILES`) and a live label preview. When `HOMEBOX_URL` + `HOMEBOX_API_KEY` are set
-(see [`sample.env`](tspl_printer_service/sample.env)), an optional **Homebox** section
+(see [`sample.env`](sample.env)), an optional **Homebox** section
 appears: search your inventory and print **Homebox's own label** (fetched from its
 labelmaker API), and a setup wizard at `/ui/homebox/setup` helps wire up Homebox's native
 print button (external label service or a generated print-command script). With nothing
@@ -266,7 +266,7 @@ BASE=http://127.0.0.1:8888/api
 
 curl -s -X POST $BASE/print/text -H 'content-type: application/json' \
   -d '{"text":"hello label","copies":2}'
-curl -s -X POST $BASE/print/png -F file=@label_test.png
+curl -s -X POST $BASE/print/png -F file=@tests/fixtures/label_test.png
 curl -s "$BASE/jobs?limit=10"
 ```
 
@@ -291,16 +291,16 @@ Examples:
 
 ```sh
 # default (fill) — fills the whole label
-uv run python tspl_printer_service/testbench.py text "Box 12"
+uv run labeljetty-testbench text "Box 12"
 
 # width — keep it on one line, sized to the label width
-uv run python tspl_printer_service/testbench.py text "Box 12" --fit width
+uv run labeljetty-testbench text "Box 12" --fit width
 
 # fixed size, no auto-fit
-uv run python tspl_printer_service/testbench.py text "Box 12" --font-size 40
+uv run labeljetty-testbench text "Box 12" --font-size 40
 
 # markdown supports --fit too
-uv run python tspl_printer_service/testbench.py markdown "# Title
+uv run labeljetty-testbench markdown "# Title
 * one
 * two" --fit width
 ```
@@ -317,7 +317,7 @@ curl -s -X POST $BASE/print/text -H 'content-type: application/json' \
 ## Testing
 
 There is no hardware-free unit-test suite yet. Instead the library ships with a **CLI test
-bench** ([`tspl_printer_service/testbench.py`](tspl_printer_service/testbench.py)) that drives
+bench** ([`src/labeljetty/testbench.py`](src/labeljetty/testbench.py)) that drives
 the `TSPLPrinter` library directly — either against the real USB printer or in `--dry-run`
 mode, where the generated TSPL is printed to stdout instead of being sent to the device. This
 lets you exercise every renderer (and check label positioning/sizing on the real printer)
@@ -329,17 +329,17 @@ All commands are run from the **repository root**:
 
 ```sh
 # Print an alignment/ruler test pattern as TSPL to stdout
-uv run python tspl_printer_service/testbench.py --dry-run pattern
+uv run labeljetty-testbench --dry-run pattern
 
 # Other renderers in dry-run mode
-uv run python tspl_printer_service/testbench.py --dry-run text "Hello world"
-uv run python tspl_printer_service/testbench.py --dry-run markdown "# Title
+uv run labeljetty-testbench --dry-run text "Hello world"
+uv run labeljetty-testbench --dry-run markdown "# Title
 * one
 * two"
-uv run python tspl_printer_service/testbench.py --dry-run barcode 12345678 --text "Item 42"
-uv run python tspl_printer_service/testbench.py --dry-run qrcode "https://example.com" --text "box 1"
-uv run python tspl_printer_service/testbench.py --dry-run pdf /path/to/file.pdf --page 0
-uv run python tspl_printer_service/testbench.py --dry-run status
+uv run labeljetty-testbench --dry-run barcode 12345678 --text "Item 42"
+uv run labeljetty-testbench --dry-run qrcode "https://example.com" --text "box 1"
+uv run labeljetty-testbench --dry-run pdf /path/to/file.pdf --page 0
+uv run labeljetty-testbench --dry-run status
 ```
 
 Global options apply to every subcommand:
@@ -356,7 +356,7 @@ Per-subcommand options include `--font-size` / `--fit` (text & markdown; see
 [Text rendering & auto-fit](#text-rendering--auto-fit)), `--page` (pdf), `--type`/`--text`
 (barcode), and `--ecc`/`--text` (qrcode).
 
-Run `uv run python tspl_printer_service/testbench.py --help` (or `… <command> --help`) for the
+Run `uv run labeljetty-testbench --help` (or `… <command> --help`) for the
 full list.
 
 ### Against the real printer
@@ -365,13 +365,13 @@ Drop `--dry-run` to send to hardware (requires the [printer setup](#printer-setu
 
 ```sh
 # Print the alignment pattern on a 50x30 mm label and verify it lands flush to the edges
-uv run python tspl_printer_service/testbench.py --width-mm 50 --height-mm 30 pattern
+uv run labeljetty-testbench --width-mm 50 --height-mm 30 pattern
 
 # Query live printer status (head open / paper out / ribbon out / ...)
-uv run python tspl_printer_service/testbench.py status
+uv run labeljetty-testbench status
 
 # Diagnose whether this printer answers status queries at all
-uv run python tspl_printer_service/testbench.py probe
+uv run labeljetty-testbench probe
 ```
 
 The **`pattern`** command is the quickest way to validate geometry: a correctly configured
@@ -392,7 +392,7 @@ endpoints. The API enqueues jobs that the background worker prints one at a time
 BASE=http://127.0.0.1:8888/api   # match your configured host/port
 
 curl -s $BASE/worker/status                         # worker health
-curl -s -X POST $BASE/print/png -F file=@label_test.png
+curl -s -X POST $BASE/print/png -F file=@tests/fixtures/label_test.png
 curl -s "$BASE/jobs?limit=10"                       # inspect the queue
 curl -s $BASE/printer/status                         # {reachable, status_supported, status}
 ```
@@ -402,7 +402,7 @@ curl -s $BASE/printer/status                         # {reachable, status_suppor
 ## Roadmap & design
 
 The detailed design, current status table, and roadmap live in
-[`tspl_printer_service/Project_desc_goals.md`](tspl_printer_service/Project_desc_goals.md).
+[`docs/design.md`](docs/design.md).
 Highlights still to come: a generalized worker for all payload types, a mobile-first web UI
 with label preview, optional **Homebox** inventory integration, multi-token/multi-user auth,
 and packaging (systemd unit / container image / udev helper).

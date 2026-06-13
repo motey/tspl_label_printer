@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 from typing import List, Optional, Union, IO, Literal
 from PIL import Image, ImageDraw, ImageFont, _typing
-from tspl_printer_connection import TSPLPrinterConnectionUSB
+from labeljetty.printer.connection import TSPLPrinterConnectionUSB
 
 from pydantic import BaseModel
 
 DEFAULT_FONT_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+
+# The set of renderer kinds the library/service can produce. Lives here (the
+# library) rather than in the persistence layer so the printer package stays
+# free of any internal dependency.
+JobType = Literal["png", "pdf", "text", "markdown", "barcode", "qrcode"]
 
 
 class TSPLPrinterStatusMessage(BaseModel):

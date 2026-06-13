@@ -1,17 +1,17 @@
-from typing import Annotated, cast
-from fastapi import FastAPI, File, UploadFile
-from api_app import FastApiAppContainer
+from typing import cast
 from pathlib import Path
 import uvicorn
 import asyncio
 from uvicorn.config import LOGGING_CONFIG
-from print_service import PrintServiceManager
 from uvicorn.config import LifespanType
 
+from labeljetty.web.app import FastApiAppContainer
+from labeljetty.service.worker import PrintServiceManager
 
-def start():
-    from config import Config
-    from log import get_logger, get_uvicorn_loglevel
+
+def run():
+    from labeljetty.config import Config
+    from labeljetty.core.logging import get_logger, get_uvicorn_loglevel
 
     config = Config()
     log = get_logger()
@@ -49,4 +49,5 @@ def start():
             raise e
 
 
-start()
+if __name__ == "__main__":
+    run()

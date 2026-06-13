@@ -5,7 +5,7 @@ import hashlib
 from typing import Optional, Dict, Tuple
 import inspect
 from pathlib import Path
-from config import Config
+from labeljetty.config import Config
 
 config = Config()
 

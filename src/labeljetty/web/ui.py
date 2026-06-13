@@ -19,13 +19,14 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import select
 
-from api_auth import require_access
-from api_routes import _enqueue, _store_upload, _job_response
-from config import Config
-from db import JobType, PrintJob, get_session
-from label_render import render_label_png_bytes
-from print_service import PrintServiceManager
-from log import get_logger
+from labeljetty.web.auth import require_access
+from labeljetty.web.api import _enqueue, _store_upload, _job_response
+from labeljetty.config import Config
+from labeljetty.core.db import PrintJob, get_session
+from labeljetty.printer import JobType
+from labeljetty.printer.render import render_label_png_bytes
+from labeljetty.service.worker import PrintServiceManager
+from labeljetty.core.logging import get_logger
 
 config = Config()
 log = get_logger()
@@ -196,7 +197,7 @@ async def ui_print(
     copies: Annotated[int, Form()] = 1,
     file: Annotated[Optional[UploadFile], File()] = None,
 ):
-    from api_routes import LabelOptions
+    from labeljetty.web.api import LabelOptions
 
     opts = LabelOptions(
         label_width_mm=label_width_mm,
@@ -278,7 +279,7 @@ def ui_homebox_search(
     """Sync route (threadpool) — performs a blocking Homebox API call."""
     if not config.homebox_configured():
         return HTMLResponse("")
-    from homebox import HomeboxClient, HomeboxError
+    from labeljetty.integrations.homebox import HomeboxClient, HomeboxError
 
     if not q.strip():
         return templates.TemplateResponse(
@@ -301,7 +302,7 @@ def ui_homebox_search(
 
 def _homebox_fetch_label(kind: str, entity_id: str) -> tuple[bytes, str]:
     """Fetch Homebox's own label image; returns (bytes, file-suffix)."""
-    from homebox import HomeboxClient
+    from labeljetty.integrations.homebox import HomeboxClient
 
     client = HomeboxClient()
     data, content_type = client.fetch_label(kind, entity_id)
@@ -317,7 +318,7 @@ def ui_homebox_preview(
     entity_id: str = Form(...),
 ):
     """Preview Homebox's own label (fetched from its labelmaker API)."""
-    from homebox import HomeboxError
+    from labeljetty.integrations.homebox import HomeboxError
 
     if not config.homebox_configured():
         return HTMLResponse("")
@@ -330,13 +331,17 @@ def ui_homebox_preview(
     if suffix == ".pdf":
         # Render the PDF page to an image just for on-screen preview.
         import tempfile
-        from label_render import render_label_png_bytes
+        from labeljetty.printer.render import render_label_png_bytes
 
+        w, h, d = _geometry(None, None, None)
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
             tmp.write(data)
             tmp_path = Path(tmp.name)
         try:
-            png = render_label_png_bytes("pdf", {"page": 0}, input_file_path=tmp_path)
+            png = render_label_png_bytes(
+                "pdf", {"page": 0}, width_mm=w, height_mm=h, dpi=d,
+                input_file_path=tmp_path,
+            )
         finally:
             tmp_path.unlink(missing_ok=True)
         data = png
@@ -354,8 +359,8 @@ def ui_homebox_print(
     entity_id: str = Form(...),
 ):
     """Print Homebox's own label: fetch it from the labelmaker API and enqueue."""
-    from homebox import HomeboxError
-    from api_routes import _store_bytes
+    from labeljetty.integrations.homebox import HomeboxError
+    from labeljetty.web.api import _store_bytes
 
     if not config.homebox_configured():
         return HTMLResponse("")
@@ -441,7 +446,7 @@ async def ui_status(
     printer_error = None
     con = None
     try:
-        from tspl_printer import TSPLPrinter
+        from labeljetty.printer import TSPLPrinter
 
         con = config.get_printer_connection()
         # Fail fast and always release — see disconnect() / printer_status notes.

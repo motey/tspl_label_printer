@@ -3,12 +3,12 @@ from datetime import datetime
 from sqlmodel import SQLModel, Field, Column, Session, create_engine
 from sqlalchemy import String
 from contextlib import contextmanager
-from utils import SqlJsonText
-from config import Config
+from labeljetty.core.sqltypes import SqlJsonText
+from labeljetty.config import Config
 import uuid
 from pathlib import Path
 from pydantic import field_serializer, field_validator
-from tspl_printer import TSPLPrinterStatusMessage
+from labeljetty.printer import JobType, TSPLPrinterStatusMessage
 
 config = Config()
 # Database URL - configure as needed
@@ -16,9 +16,6 @@ DATABASE_URL = f"sqlite:///{config.SQLITE_PATH}"
 
 # Create engine
 engine = create_engine(DATABASE_URL, echo=False)
-
-
-JobType = Literal["png", "pdf", "text", "markdown", "barcode", "qrcode"]
 
 
 class PrintJob(SQLModel, table=True):

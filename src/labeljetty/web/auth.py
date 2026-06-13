@@ -2,8 +2,8 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Annotated, Optional
 from fastapi import HTTPException, status, Depends
 
-from config import Config
-from log import get_logger
+from labeljetty.config import Config
+from labeljetty.core.logging import get_logger
 
 
 config = Config()

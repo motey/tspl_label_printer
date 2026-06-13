@@ -14,11 +14,11 @@ from pathlib import Path
 from fastapi.openapi.utils import get_openapi
 
 
-from api_routes import fast_api_router
-from ui_routes import ui_router
+from labeljetty.web.api import fast_api_router
+from labeljetty.web.ui import ui_router
 
-from log import get_logger
-from config import Config
+from labeljetty.core.logging import get_logger
+from labeljetty.config import Config
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -116,10 +116,6 @@ class FastApiAppContainer:
             allow_headers=["*"],
             allow_credentials=True,
         )
-        # self.app.add_middleware(
-        #    SessionMiddleware,
-        #    secret_key=config.SERVER_SESSION_SECRET.get_secret_value(),
-        # )
 
     def _mount_routers(self):
         self.app.include_router(fast_api_router, prefix=self.url_prefix)
@@ -128,6 +124,3 @@ class FastApiAppContainer:
         self.app.mount(
             "/static", StaticFiles(directory=STATIC_DIR), name="static"
         )
-
-
-fast_api_app_container = FastApiAppContainer()

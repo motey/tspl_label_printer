@@ -20,7 +20,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
-from config import Config
+from labeljetty.config import Config
 
 config = Config()
 

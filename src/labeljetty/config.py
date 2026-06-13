@@ -6,10 +6,13 @@ from pydantic_settings import BaseSettings
 from typing import Literal, Optional
 
 if TYPE_CHECKING:
-    from tspl_printer_connection import TSPLPrinterConnectionUSB
+    from labeljetty.printer.connection import TSPLPrinterConnectionUSB
 
+# `.env` is looked up relative to the current working directory (the repo root,
+# per the README) — the override env var takes precedence. It is intentionally
+# not resolved relative to this file, which now lives inside the package.
 env_file_path = os.environ.get(
-    "TSPL_PRINTER_WEBAPI_DOT_ENV_FILE", Path(__file__).parent / ".env"
+    "TSPL_PRINTER_WEBAPI_DOT_ENV_FILE", Path(".env")
 )
 
 
@@ -39,7 +42,7 @@ class Config(BaseSettings):
     )
     SQLITE_PATH: str = Field(default="./printjobs.sqlite")
     IMAGE_STORAGE_DIRECTORY: str = Field(
-        default="./../images", description="Storage for posted images to print"
+        default="./images", description="Storage for posted images to print"
     )
     API_ACCESS_TOKEN: Optional[str] = Field(
         default=None,
@@ -132,7 +135,7 @@ class Config(BaseSettings):
 
     def get_printer_connection(self) -> "TSPLPrinterConnectionUSB":
         """Returns a printer connection using the configured identifier"""
-        from tspl_printer_connection import TSPLPrinterConnectionUSB
+        from labeljetty.printer.connection import TSPLPrinterConnectionUSB
 
         usb_id = self.PRINTER_USB
 

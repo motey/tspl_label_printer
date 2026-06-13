@@ -205,4 +205,8 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# labeljetty runtime artifacts
 printjobs.sqlite
+*.sqlite
+/images/

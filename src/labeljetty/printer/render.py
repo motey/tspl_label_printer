@@ -19,11 +19,7 @@ from typing import Any, Dict, Optional
 
 from PIL import Image
 
-from db import JobType
-from tspl_printer import TSPLPrinter
-from config import Config
-
-config = Config()
+from labeljetty.printer.tspl import JobType, TSPLPrinter
 
 
 def _printer(width_mm: int, height_mm: int, dpi: int) -> TSPLPrinter:
@@ -41,18 +37,18 @@ def render_label_image(
     job_type: JobType,
     params: Optional[Dict[str, Any]] = None,
     *,
-    width_mm: Optional[int] = None,
-    height_mm: Optional[int] = None,
-    dpi: Optional[int] = None,
+    width_mm: int,
+    height_mm: int,
+    dpi: int,
     input_file_path: Optional[Path] = None,
 ) -> Image.Image:
-    """Render a job to a 1-bit, label-sized PIL image (exactly what would print)."""
+    """Render a job to a 1-bit, label-sized PIL image (exactly what would print).
+
+    The label geometry (``width_mm``/``height_mm``/``dpi``) is required — callers
+    resolve their own defaults — so this module stays free of any config import.
+    """
     params = params or {}
-    printer = _printer(
-        width_mm or config.DEFAULT_LABEL_WIDTH_MM,
-        height_mm or config.DEFAULT_LABEL_HEIGHT_MM,
-        dpi or config.DEFAULT_DPI,
-    )
+    printer = _printer(width_mm, height_mm, dpi)
 
     if job_type == "png":
         if input_file_path is None:
@@ -105,9 +101,9 @@ def render_label_png_bytes(
     job_type: JobType,
     params: Optional[Dict[str, Any]] = None,
     *,
-    width_mm: Optional[int] = None,
-    height_mm: Optional[int] = None,
-    dpi: Optional[int] = None,
+    width_mm: int,
+    height_mm: int,
+    dpi: int,
     input_file_path: Optional[Path] = None,
 ) -> bytes:
     """Render a job and return PNG-encoded bytes (for HTTP responses)."""

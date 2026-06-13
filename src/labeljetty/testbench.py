@@ -20,17 +20,17 @@ Examples (run from the repository root):
 import argparse
 import sys
 
-from tspl_printer import TSPLPrinter
+from labeljetty.printer import TSPLPrinter
 
 
 def _label_defaults() -> tuple[int, int, int]:
     """Default label geometry, sourced from the config/env vars
     (DEFAULT_LABEL_WIDTH_MM / DEFAULT_LABEL_HEIGHT_MM / DEFAULT_DPI, read from
-    tspl_printer_service/.env). Falls back to 100x30mm @ 203dpi only if the
+    the repo-root .env). Falls back to 100x30mm @ 203dpi only if the
     config can't be loaded (e.g. dry-run with no .env present).
     """
     try:
-        from config import Config
+        from labeljetty.config import Config
 
         c = Config()
         return c.DEFAULT_LABEL_WIDTH_MM, c.DEFAULT_LABEL_HEIGHT_MM, c.DEFAULT_DPI
@@ -43,7 +43,7 @@ def build_printer(args) -> TSPLPrinter:
     if args.dry_run:
         connection = None
     else:
-        from config import Config
+        from labeljetty.config import Config
 
         config = Config()
         if args.usb:

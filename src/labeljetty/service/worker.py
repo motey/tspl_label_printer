@@ -9,11 +9,11 @@ import psutil
 from sqlalchemy.sql.operators import is_
 from pydantic import BaseModel
 
-from db import get_session, PrintJob, WorkerStatus, init_db
-from tspl_printer import TSPLPrinter, TSPLPrinterConnectionUSB
-from log import get_logger
+from labeljetty.core.db import get_session, PrintJob, WorkerStatus, init_db
+from labeljetty.printer import TSPLPrinter, TSPLPrinterConnectionUSB
+from labeljetty.core.logging import get_logger
 
-from config import Config
+from labeljetty.config import Config
 
 config = Config()
 log = get_logger()
