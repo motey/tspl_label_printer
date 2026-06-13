@@ -14,7 +14,7 @@ jobs:
         python-version: ["3.11", "3.12"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # Text/markdown rendering uses DejaVu Sans (DEFAULT_FONT_PATH); the runner
       # does not ship it by default.

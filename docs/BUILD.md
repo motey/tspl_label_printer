@@ -124,7 +124,7 @@ as `0.0.0+dev.<short-sha>`. Not for production.
 
 | Secret               | Workflow                      | What it is                                            |
 | -------------------- | ----------------------------- | ----------------------------------------------------- |
-| `DOCKERHUB_USERNAME` | `docker.yml`, `docker-dev.yml` | Docker Hub account; also the image namespace         |
+| `DOCKERHUB_USERNAME` | `docker.yml`, `docker-dev.yml` | Docker Hub login (needs push access to `motey/labeljetty`) |
 | `DOCKERHUB_TOKEN`    | `docker.yml`, `docker-dev.yml` | Docker Hub access token (Account Settings → Security) |
 | `PYPI_API_TOKEN`     | `pypi.yml`                    | PyPI API token (pypi.org → Account → API tokens)      |
 

@@ -484,7 +484,8 @@ curl -s $BASE/printer/status                         # {reachable, status_suppor
 
 ## Docker
 
-The image is published to Docker Hub as `<dockerhub-user>/labeljetty`. It runs the web
+The image is published to Docker Hub as
+[`motey/labeljetty`](https://hub.docker.com/r/motey/labeljetty). It runs the web
 service (API + UI) and is the recommended way to deploy the printer on an always-on box.
 
 ```sh
@@ -492,7 +493,7 @@ docker run --rm -p 8888:8888 \
   --device=/dev/bus/usb \
   -e PRINTER_USB=vid:2d37:pid:62de \
   -v "$(pwd)/data:/data" \
-  <dockerhub-user>/labeljetty:latest
+  motey/labeljetty:latest
 ```
 
 - **USB access** — the container needs the printer's USB device. `--device=/dev/bus/usb`
