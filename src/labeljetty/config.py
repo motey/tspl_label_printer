@@ -25,6 +25,21 @@ class LabelProfile(BaseModel):
     dpi: Optional[int] = None
 
 
+class AuthToken(BaseModel):
+    """A named API token for machine-to-machine access (sent as a Bearer token)."""
+
+    name: str
+    token: str
+
+
+class AuthUser(BaseModel):
+    """A local login user. ``password_hash`` is a ``pbkdf2_sha256$…`` string —
+    generate it with the ``labeljetty-hash-password`` CLI (never store plaintext)."""
+
+    username: str
+    password_hash: str
+
+
 class Config(BaseSettings):
     APP_NAME: str = "TSPL Printer WebAPI"
     LOG_LEVEL: Literal["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"] = Field(
@@ -44,10 +59,30 @@ class Config(BaseSettings):
     IMAGE_STORAGE_DIRECTORY: str = Field(
         default="./images", description="Storage for posted images to print"
     )
-    API_ACCESS_TOKEN: Optional[str] = Field(
-        default=None,
-        description="""If API_ACCESS_TOKEN is not empty, any API endpoints needs a authorization header (e.g. in curl `-H "Authorization: Bearer your-secret-token"`)""",
-    )
+    # --- Authentication ----------------------------------------------------- #
+    # AUTH_MODE selects the policy. "open" (default) = no auth at all — intended
+    # for a trusted LAN appliance. See the fat warning in the README before
+    # exposing the service beyond a trusted network. "protected" = every route
+    # requires a valid credential from ANY configured provider (tokens and/or
+    # local users; OIDC is planned as a drop-in third provider).
+    AUTH_MODE: Literal["open", "protected"] = Field(default="open")
+    # API tokens for machine-to-machine access, as a JSON list, e.g.
+    #   AUTH_TOKENS='[{"name":"ci","token":"s3cr3t"}]'
+    # Sent by clients as `Authorization: Bearer <token>`.
+    AUTH_TOKENS: List[AuthToken] = Field(default_factory=list)
+    # Local login users (humans, via the /login form → session cookie), e.g.
+    #   AUTH_USERS='[{"username":"tim","password_hash":"pbkdf2_sha256$..."}]'
+    # Generate password_hash with: labeljetty-hash-password
+    AUTH_USERS: List[AuthUser] = Field(default_factory=list)
+    # Secret used to sign session cookies. Leave unset for an ephemeral random
+    # secret (logins won't survive a restart) — set a stable value in production.
+    SESSION_SECRET: Optional[str] = Field(default=None)
+    SESSION_COOKIE_NAME: str = Field(default="labeljetty_session")
+    SESSION_MAX_AGE: int = Field(default=1_209_600, description="Session lifetime in seconds (default 14 days).")
+    # --- OIDC (reserved — planned drop-in provider, not yet implemented) ----- #
+    # AUTH_OIDC_ISSUER / AUTH_OIDC_CLIENT_ID / AUTH_OIDC_CLIENT_SECRET will be
+    # added when OIDC lands. The auth framework already returns a Principal and
+    # resolves providers from the session, so OIDC slots in without route changes.
     DELETE_OLD_JOBS_AFTER_DAYS: int = Field(
         default=100,
         description="Old job entries in the database will be removed with associated files.",
@@ -92,6 +127,28 @@ class Config(BaseSettings):
     def homebox_configured(self) -> bool:
         """True when the Homebox module should be active."""
         return bool(self.HOMEBOX_ENABLED and self.HOMEBOX_URL and self.HOMEBOX_API_KEY)
+
+    def auth_enabled(self) -> bool:
+        """True when routes require authentication (``AUTH_MODE == "protected"``)."""
+        return self.AUTH_MODE == "protected"
+
+    def find_user(self, username: str) -> Optional[AuthUser]:
+        """Return the configured user with this username, or None."""
+        for user in self.AUTH_USERS:
+            if user.username == username:
+                return user
+        return None
+
+    @model_validator(mode="after")
+    def validate_auth_config(self) -> Self:
+        """Guard against a lock-everyone-out / no-op auth configuration."""
+        if self.AUTH_MODE == "protected" and not self.AUTH_TOKENS and not self.AUTH_USERS:
+            raise ValueError(
+                "AUTH_MODE=protected but neither AUTH_TOKENS nor AUTH_USERS is "
+                "configured — this would lock out every request. Configure at "
+                "least one token or user, or set AUTH_MODE=open."
+            )
+        return self
 
     def get_label_profiles(self) -> List[LabelProfile]:
         """Configured profiles, preceded by the server-default geometry."""

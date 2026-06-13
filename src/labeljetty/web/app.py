@@ -6,7 +6,10 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from fastapi import FastAPI
 
+import secrets
+
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from pathlib import Path
@@ -51,6 +54,7 @@ class FastApiAppContainer:
         )
         self._mount_routers()
         self._apply_api_middleware()
+        self._apply_session_middleware()
 
     def add_startup_callback(
         self,
@@ -115,6 +119,30 @@ class FastApiAppContainer:
             allow_methods=["*"],
             allow_headers=["*"],
             allow_credentials=True,
+        )
+
+    def _apply_session_middleware(self):
+        """Signed-cookie sessions for human login (and future OIDC).
+
+        Without a configured SESSION_SECRET we generate an ephemeral one: logins
+        work but do not survive a restart. Warn so production deployments set a
+        stable secret.
+        """
+        secret = config.SESSION_SECRET
+        if not secret:
+            secret = secrets.token_hex(32)
+            log.warning(
+                "SESSION_SECRET is not set — using an ephemeral random secret. "
+                "Sessions (logins) will not survive a restart. Set SESSION_SECRET "
+                "for stable sessions."
+            )
+        self.app.add_middleware(
+            SessionMiddleware,
+            secret_key=secret,
+            session_cookie=config.SESSION_COOKIE_NAME,
+            max_age=config.SESSION_MAX_AGE,
+            same_site="lax",
+            https_only=False,
         )
 
     def _mount_routers(self):

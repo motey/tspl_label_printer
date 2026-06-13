@@ -15,11 +15,11 @@ from pathlib import Path
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, Form, Request, UploadFile, File
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import select
 
-from labeljetty.web.auth import require_access
+from labeljetty.web.auth import require_access, current_principal, verify_password
 from labeljetty.web.api import _enqueue, _store_upload, _job_response
 from labeljetty.config import Config
 from labeljetty.core.db import PrintJob, get_session
@@ -50,6 +50,8 @@ def _base_context(request: Request) -> dict:
         "default_height_mm": config.DEFAULT_LABEL_HEIGHT_MM,
         "default_dpi": config.DEFAULT_DPI,
         "homebox_enabled": config.homebox_configured(),
+        "auth_enabled": config.auth_enabled(),
+        "principal": current_principal(request),
     }
 
 
@@ -92,6 +94,45 @@ def _build_params(
     if job_type == "png":
         return {"fit": image_fit}
     return {}
+
+
+# --------------------------------------------------------------------------- #
+#  Login / logout (human auth — these routes are intentionally public)
+# --------------------------------------------------------------------------- #
+@ui_router.get("/login", response_class=HTMLResponse)
+async def login_form(request: Request, next: str = "/"):
+    # Nothing to log into when auth is off or no local users exist.
+    if not config.auth_enabled() or not config.AUTH_USERS:
+        return RedirectResponse("/", status_code=303)
+    ctx = _base_context(request)
+    ctx.update({"next": next, "error": None})
+    return templates.TemplateResponse("login.html", ctx)
+
+
+@ui_router.post("/login", response_class=HTMLResponse)
+async def login_submit(
+    request: Request,
+    username: Annotated[str, Form()],
+    password: Annotated[str, Form()],
+    next: Annotated[str, Form()] = "/",
+):
+    user = config.find_user(username)
+    if user is None or not verify_password(password, user.password_hash):
+        ctx = _base_context(request)
+        ctx.update({"next": next, "error": "Invalid username or password."})
+        return templates.TemplateResponse(
+            "login.html", ctx, status_code=401
+        )
+    request.session["sub"] = user.username
+    # Only allow same-site relative redirects to avoid open-redirect abuse.
+    target = next if next.startswith("/") and not next.startswith("//") else "/"
+    return RedirectResponse(target, status_code=303)
+
+
+@ui_router.get("/logout")
+async def logout(request: Request):
+    request.session.clear()
+    return RedirectResponse("/login", status_code=303)
 
 
 # --------------------------------------------------------------------------- #
@@ -404,7 +445,8 @@ async def ui_homebox_setup(
     width_px = round(w_mm / 25.4 * dpi)
     height_px = round(h_mm / 25.4 * dpi)
 
-    token = config.API_ACCESS_TOKEN
+    # If protected, embed the first configured API token in the generated script.
+    token = config.AUTH_TOKENS[0].token if config.AUTH_TOKENS else None
     auth_line = f'  -H "Authorization: Bearer {token}" \\\n' if token else ""
     print_script = (
         "#!/usr/bin/env sh\n"

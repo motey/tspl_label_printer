@@ -264,7 +264,7 @@ To add:
 | REST API | **Complete:** print png/pdf/text/markdown/barcode/qrcode + `/jobs`, `/jobs/{id}`, `/worker/status`, `/printer/status` |
 | CLI test bench | **Added** (`testbench.py`): per-type subcommands, `pattern`, `status`, `probe`, `raw`, dry-run |
 | Web UI | **Done** — mobile-first HTMX + Jinja2 UI: print all types, label profiles, live preview, job + printer/worker status polling |
-| Auth | Single optional token only (now via a central `require_access` seam on every API + UI route); multi-mode (open/token/login) still pending |
+| Auth | **Done** — `AUTH_MODE` open (default) / protected; pluggable provider model behind the central `require_access` seam returning a `Principal`: multi-token (Bearer) + multi-user (login form + signed-cookie session). Open is default with a fat README warning. Designed OIDC-ready (drop-in provider; OIDC callback reuses the session). |
 | Homebox integration (modular) | **Done** — config-gated: pull (search `/v1/entities`, then fetch + print **Homebox's own** label from `/v1/labelmaker/{kind}/{id}`), push label-service endpoint (`/api/homebox/label`, renders our engine + autoprint), and a setup-helper wizard generating the print-command script (host configurable) + `HBOX_LABEL_MAKER_*` env hints. Verified live against v0.26. |
 
 ---
@@ -293,11 +293,16 @@ To add:
    (toggle: `HOMEBOX_LABEL_SERVICE_AUTOPRINT`), plus a setup-helper **wizard**
    (`/ui/homebox/setup`) that generates the `HBOX_LABEL_MAKER_PRINT_COMMAND` script
    (printer host configurable) and the `HBOX_LABEL_MAKER_*` env-var hints.
-7. **Auth:** multi-token + multi-user + open mode, selected by config. ← **NEXT** (deferred to
-   its own session; today a single optional bearer token gates all routes via the central
-   `require_access` seam in `api_auth.py`).
+7. ✅ **DONE — Auth:** `AUTH_MODE` open (default, with a prominent README warning) / protected,
+   selected by config. Behind the central `require_access` seam (now returning a `Principal`)
+   sits a pluggable provider model: **multi-token** (`AUTH_TOKENS`, Bearer) for machines and
+   **multi-user** (`AUTH_USERS`, login form → signed-cookie session via `SessionMiddleware`)
+   for humans; both can be active at once. Passwords are pbkdf2 (stdlib) with a
+   `labeljetty-hash-password` CLI. Browsers redirect to `/login`; API clients get 401.
+   Designed **OIDC-ready** — OIDC slots in as a third provider reusing the same session, no
+   route changes. (`API_ACCESS_TOKEN` removed.)
 8. **Packaging:** systemd unit / container image, udev rule for non-root USB access on the
-   Pi, setup docs.
+   Pi, setup docs. ← **NEXT**
 
 ---
 

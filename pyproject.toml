@@ -26,6 +26,7 @@ dependencies = [
 [project.scripts]
 labeljetty = "labeljetty.app:run"
 labeljetty-testbench = "labeljetty.testbench:main"
+labeljetty-hash-password = "labeljetty.web.password:hash_password_cli"
 
 [build-system]
 requires = ["hatchling"]

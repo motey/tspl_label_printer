@@ -4,6 +4,7 @@ from sqlmodel import select
 import time
 import multiprocessing
 import os
+import signal
 from datetime import datetime, timedelta
 import psutil
 from sqlalchemy.sql.operators import is_
@@ -41,6 +42,7 @@ class PrintServiceManager:
         init_db()
         self.process = None
         self.shutdown_event = multiprocessing.Event()
+        self._stopped = False
 
     def start(self):
         """Start print service in background process (non-blocking)"""
@@ -51,11 +53,19 @@ class PrintServiceManager:
         self.process = multiprocessing.Process(
             target=self._run_service_with_watchdog, args=(self.shutdown_event,)
         )
+        # Daemonic: the interpreter terminates this child on a normal parent exit,
+        # so the worker can never be left orphaned even if our explicit shutdown
+        # path is skipped (e.g. KeyboardInterrupt escaping uvicorn.serve()).
+        self.process.daemon = True
         self.process.start()
         log.info(f"Print service started with PID {self.process.pid}")
 
     def shutdown(self, timeout: float = 10.0):
-        """Reliably shutdown the service"""
+        """Reliably shut down the service. Idempotent — safe to call more than once
+        (it is invoked from both the FastAPI lifespan and the entrypoint's finally)."""
+        if self._stopped:
+            return
+        self._stopped = True
         log.info("Shutting down print service...")
         self.shutdown_event.set()
 
@@ -132,6 +142,11 @@ class PrintServiceManager:
     @staticmethod
     def _run_service_with_watchdog(shutdown_event: multiprocessing.Event):
         """Watchdog that restarts service on failure (max 3 times)"""
+        # A terminal Ctrl+C delivers SIGINT to the whole process group, this child
+        # included. Ignore it here so the worker is never interrupted mid-print and
+        # its lifecycle is driven solely by the parent (shutdown_event / terminate).
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+
         max_retries = 3
         retry_count = 0
 

@@ -19,6 +19,14 @@ def run():
     log.info(f"UVICORN_LOG_LEVEL: {get_uvicorn_loglevel()}")
     log.info(f"Create image storage directory at '{config.IMAGE_STORAGE_DIRECTORY}'")
     log.info(f"USB Printer at {config.PRINTER_USB} if not exists")
+    if config.auth_enabled():
+        log.info(f"AUTH_MODE=protected — {len(config.AUTH_TOKENS)} token(s), {len(config.AUTH_USERS)} user(s)")
+    else:
+        log.warning(
+            "AUTH_MODE=open — NO AUTHENTICATION. Every endpoint is public. "
+            "Only run this on a trusted LAN. Set AUTH_MODE=protected with "
+            "AUTH_TOKENS/AUTH_USERS before exposing it more widely."
+        )
     Path(config.IMAGE_STORAGE_DIRECTORY).mkdir(parents=True, exist_ok=True)
 
     event_loop = asyncio.get_event_loop()
@@ -40,13 +48,16 @@ def run():
     try:
         log.debug("Start uvicorn server...")
         event_loop.run_until_complete(uvicorn_server.serve())
-    except (KeyboardInterrupt, Exception) as e:
-        if isinstance(e, KeyboardInterrupt):
-            log.info("KeyboardInterrupt shutdown...")
-        if isinstance(e, Exception):
-            log.info("Panic shutdown...")
-        if isinstance(e, Exception):
-            raise e
+    except KeyboardInterrupt:
+        log.info("KeyboardInterrupt shutdown...")
+    except Exception:
+        log.info("Panic shutdown...")
+        raise
+    finally:
+        # Always tear the worker down with us — uvicorn's lifespan shutdown does
+        # not run when KeyboardInterrupt escapes serve(), so the lifespan callback
+        # alone is not enough. shutdown() is idempotent.
+        print_service.shutdown()
 
 
 if __name__ == "__main__":

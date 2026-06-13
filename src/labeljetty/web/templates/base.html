@@ -12,6 +12,12 @@
     <span class="dot" id="health-dot"></span>
     <h1>{{ app_name }}</h1>
     <span class="tagline">USB TSPL label printer</span>
+    {% if auth_enabled and principal and principal.is_authenticated %}
+    <span class="user-nav">
+      <span class="user-name">{{ principal.display_name }}</span>
+      <a class="logout" href="/logout">Log out</a>
+    </span>
+    {% endif %}
   </header>
   <main>
     {% block content %}{% endblock %}

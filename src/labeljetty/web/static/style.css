@@ -139,3 +139,13 @@ table.jobs th { color: var(--muted); font-weight: 500; }
 
 .tagline { color: var(--muted); font-size: 0.8rem; margin-left: auto; }
 @media (max-width: 520px) { .tagline { display: none; } }
+
+/* Auth nav (shown only in protected mode when logged in) */
+.user-nav { margin-left: auto; display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem; }
+.user-nav .user-name { color: var(--muted); }
+.user-nav .logout { color: var(--accent); text-decoration: none; }
+.user-nav .logout:hover { text-decoration: underline; }
+
+/* Login form */
+.login-panel { max-width: 360px; margin: 2rem auto; }
+.login-panel .error { color: var(--err); margin: 0 0 0.8rem; font-size: 0.9rem; }

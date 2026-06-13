@@ -9,10 +9,13 @@ driver — and exposes both a Python library and a REST API for printing PNGs, P
 markdown, barcodes and QR codes.
 
 > Status: functional. The library, REST API, a mobile-first **web UI** (print + preview +
-> live status), and the optional **Homebox** integration all work. Multi-user/multi-token
-> auth and packaging are still on the roadmap. See
+> live status), optional **Homebox** integration, and multi-token / multi-user
+> **[authentication](#authentication)** all work; only packaging remains on the roadmap. See
 > [`docs/design.md`](docs/design.md)
 > for the full design and roadmap.
+>
+> ⚠️ **Authentication is OFF by default** (`AUTH_MODE=open`) — fine on a trusted LAN, but read
+> [Authentication](#authentication) before exposing it anywhere else.
 
 ---
 
@@ -196,7 +199,10 @@ All settings are read from environment variables (or
 | `PRINTER_USB`             | *(required)*         | Which USB printer to use (see forms above)              |
 | `SERVER_LISTENING_HOST`   | `localhost`          | API bind host (use `0.0.0.0` to expose on the LAN)      |
 | `SERVER_LISTENING_PORT`   | `8888`               | API port                                                |
-| `API_ACCESS_TOKEN`        | *(none)*             | If set, all endpoints require `Authorization: Bearer …` |
+| `AUTH_MODE`               | `open`               | `open` (no auth) or `protected` — see [Authentication](#authentication) |
+| `AUTH_TOKENS`             | `[]`                 | JSON list of API tokens for machines, e.g. `[{"name":"ci","token":"…"}]` |
+| `AUTH_USERS`              | `[]`                 | JSON list of login users, e.g. `[{"username":"tim","password_hash":"pbkdf2_sha256$…"}]` |
+| `SESSION_SECRET`          | *(ephemeral)*        | Secret signing session cookies; set a stable value so logins survive restarts |
 | `SQLITE_PATH`             | `./printjobs.sqlite` | Job-queue database (relative to the working directory)  |
 | `IMAGE_STORAGE_DIRECTORY` | `./../images`        | Where uploaded files are stored (relative to cwd)       |
 | `DELETE_OLD_JOBS_AFTER_DAYS` | `100`             | Retention for old jobs and their files                  |
@@ -208,6 +214,54 @@ All settings are read from environment variables (or
 > **Note:** `SQLITE_PATH` and `IMAGE_STORAGE_DIRECTORY` are resolved **relative to the current
 > working directory**. Run the service from the same directory each time (this README assumes
 > the repository root), or set absolute paths in `.env`.
+
+---
+
+## Authentication
+
+> # ⚠️ THE DEFAULT IS NO AUTHENTICATION
+>
+> Out of the box (`AUTH_MODE=open`) **every endpoint and the whole web UI are public** —
+> anyone who can reach the host can print, browse the job queue, and read printer status.
+> This is intentional for the common case: a single printer on a **trusted home LAN**.
+>
+> **Do NOT expose this service to the internet, an untrusted network, or a shared host in
+> open mode.** Before doing so, set `AUTH_MODE=protected` and configure at least one token or
+> user — or put the service behind your own reverse-proxy auth / VPN.
+
+There are two modes, selected by `AUTH_MODE`:
+
+- **`open`** (default) — no authentication. LAN-only convenience.
+- **`protected`** — every API and UI route requires a valid credential. Multiple credential
+  **providers** can be active at once; any one of them satisfies a request:
+  - **API tokens** (`AUTH_TOKENS`) — for machines/scripts. Sent as `Authorization: Bearer <token>`.
+  - **Local users** (`AUTH_USERS`) — for humans. They log in at `/login`; a signed session
+    cookie keeps them authenticated. (Browsers hitting a protected route while logged out are
+    redirected to `/login`; API clients receive `401`.)
+
+> The auth layer is built around a pluggable provider model and a `Principal` identity, so
+> **OIDC / SSO is planned as a drop-in third provider** without changing any routes.
+
+### Protected setup
+
+```sh
+# Generate a password hash for a login user (never store plaintext):
+uv run labeljetty-hash-password
+# → pbkdf2_sha256$600000$…$…
+
+# .env
+AUTH_MODE=protected
+AUTH_TOKENS=[{"name":"ci","token":"choose-a-long-random-secret"}]
+AUTH_USERS=[{"username":"tim","password_hash":"pbkdf2_sha256$600000$…$…"}]
+SESSION_SECRET=another-long-random-string   # so logins survive restarts
+```
+
+If `AUTH_MODE=protected` but neither tokens nor users are configured, startup fails fast
+(otherwise you'd lock yourself out). If `SESSION_SECRET` is unset, an ephemeral one is used
+and logins reset on restart (a warning is logged).
+
+> **Migration:** the old single `API_ACCESS_TOKEN` variable has been **removed**. Replace it
+> with `AUTH_MODE=protected` + an `AUTH_TOKENS` entry.
 
 ---
 
@@ -237,8 +291,8 @@ configured there is no trace of Homebox in the app.
 
 ### REST API
 
-All routes are under the `/api` prefix. If `API_ACCESS_TOKEN` is set, send it as
-`-H "Authorization: Bearer <token>"`.
+All routes are under the `/api` prefix. In `protected` mode, send an API token as
+`-H "Authorization: Bearer <token>"` (see [Authentication](#authentication)).
 
 | Method & path             | Body                                  | Purpose                              |
 | ------------------------- | ------------------------------------- | ------------------------------------ |
