@@ -1,0 +1,38 @@
+name: tests
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Text/markdown rendering uses DejaVu Sans (DEFAULT_FONT_PATH); the runner
+      # does not ship it by default.
+      - name: Install DejaVu fonts
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends fonts-dejavu-core
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install project + dev dependencies
+        run: uv sync --group dev --python ${{ matrix.python-version }}
+
+      - name: Run tests
+        # The suite is fully isolated (no .env, no USB, no network) — nothing
+        # extra to configure. "hardware"-marked tests are deselected by default.
+        run: uv run --no-sync python -m pytest --cov=labeljetty --cov-report=term-missing

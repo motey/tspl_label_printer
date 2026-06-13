@@ -370,12 +370,25 @@ curl -s -X POST $BASE/print/text -H 'content-type: application/json' \
 
 ## Testing
 
-There is no hardware-free unit-test suite yet. Instead the library ships with a **CLI test
-bench** ([`src/labeljetty/testbench.py`](src/labeljetty/testbench.py)) that drives
-the `TSPLPrinter` library directly — either against the real USB printer or in `--dry-run`
-mode, where the generated TSPL is printed to stdout instead of being sent to the device. This
-lets you exercise every renderer (and check label positioning/sizing on the real printer)
-without writing throwaway scripts.
+There are two complementary layers:
+
+1. **Automated test suite** (`tests/`) — a hardware-free `pytest` harness covering
+   every unit, the print-service worker, and all REST + web-UI endpoints. It needs
+   no `.env`, printer, or network. Run it with:
+
+   ```sh
+   uv sync --group dev
+   uv run python -m pytest
+   ```
+
+   Full setup, isolation design, fixtures, and CI details are in
+   [docs/TESTING.md](docs/TESTING.md).
+
+2. **CLI test bench** ([`src/labeljetty/testbench.py`](src/labeljetty/testbench.py)) —
+   for **manual hardware testing**, which is intentionally never automated. It drives
+   the `TSPLPrinter` library directly, either against the real USB printer or in
+   `--dry-run` mode (the generated TSPL is printed to stdout instead of being sent to
+   the device), so you can check label positioning/sizing on the real printer.
 
 ### Dry-run (no hardware needed)
 
