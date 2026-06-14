@@ -170,7 +170,7 @@ Per-subcommand options include `--font-size` / `--fit` (text & markdown; see
 ### Against the real printer
 
 Drop `--dry-run` to send to hardware (requires the
-[printer setup](setup.md#4-grant-usb-access) - udev rule + `PRINTER_USB`):
+[printer setup](advanced-usage.md#grant-usb-access) - udev rule + `PRINTER_USB`):
 
 ```sh
 # Print the alignment pattern on a 57x32 mm label and verify it lands flush to the edges

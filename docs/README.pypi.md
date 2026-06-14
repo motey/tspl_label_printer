@@ -21,11 +21,13 @@ This gives you three commands:
 - `labeljetty-testbench` - drives the printer library directly (real device or dry-run)
 - `labeljetty-hash-password` - generates a password hash for a login user
 
-You need **Python 3.11+**, **libusb**, and a USB **TSPL** printer. Set at least `PRINTER_USB`
-(e.g. `PRINTER_USB=vid:2d37:pid:62de`, found via `lsusb`) in a `.env` or the environment, then
-run `labeljetty` and open **http://localhost:8888/**. The
-[Setup guide](https://github.com/motey/LabelJetty/blob/main/docs/setup.md) covers the printer,
-the udev rule, and verifying your first label.
+You need **Python 3.11+**, **libusb**, and a USB **TSPL** printer. `PRINTER_USB` auto-detects a
+single connected printer; pin one (e.g. `PRINTER_USB=vid:2d37:pid:62de`, found via `lsusb`) in a
+`.env` or the environment if you have several. Then run `labeljetty` and open
+**http://localhost:8888/**. The
+[Setup guide](https://github.com/motey/LabelJetty/blob/main/docs/setup.md) is the overview;
+finding the printer and the [udev rule](https://github.com/motey/LabelJetty/blob/main/docs/advanced-usage.md#grant-usb-access)
+are covered under Advanced usage.
 
 > Prefer Docker? The image is [`motey/labeljetty`](https://hub.docker.com/r/motey/labeljetty).
 

@@ -55,10 +55,11 @@ It **auto-detects your connected printer** (and writes a matching udev rule), so
 to configure for a single printer. Tunables if you need them: `PRINTER_USB=...` (pin a specific
 device when several are attached), `LABELJETTY_DIR=...`, `LABEL_WIDTH_MM/HEIGHT_MM/DPI`.
 
-> **New here, or want to do it by hand?** The **[Setup guide](docs/setup.md)** walks through the
-> Docker Compose deployment step by step - picking a printer, the udev rule, the
-> [`docker-compose.yml`](docker-compose.yml), and your first label - which is exactly what the
-> installer automates.
+> **New here?** The **[Setup guide](docs/setup.md)** is the start-to-finish overview (printer →
+> install → verify → configure). Want to do it **by hand** - picking a printer, the udev rule, the
+> [`docker-compose.yml`](docker-compose.yml)? That step-by-step Docker Compose deployment, which is
+> exactly what the installer automates, is in
+> [Manual Docker setup](docs/advanced-usage.md#manual-docker-setup).
 
 Image tags (`latest` / `beta` / `X.Y.Z` / `dev`) and architectures (incl. 64-bit Pi 3/4/5) are in
 [Advanced usage → Docker](docs/advanced-usage.md#docker-tags--architectures); running **without
@@ -95,7 +96,7 @@ The architecture and trade-offs are in **[Design](docs/design.md)**.
 
 | Doc | What's in it |
 | --- | --- |
-| **[Setup guide](docs/setup.md)** | Start here: printer to first label, in order (hardware, host, USB id, udev rule, run, verify). |
+| **[Setup guide](docs/setup.md)** | Start here: printer to first label - get a printer, install (the one-liner), verify, configure. |
 | **[Configuration](docs/configuration.md)** | Every setting (must / should / optional) and the `PRINTER_USB` selector forms. |
 | **[Advanced usage](docs/advanced-usage.md)** | Non-Docker install, authentication, the REST API, text auto-fit, Homebox, Docker tags/arches. |
 | **[Hardware](docs/hardware.md)** | Which cheap 420B-class printer to buy and where (rough, LLM-sourced stub for now). |

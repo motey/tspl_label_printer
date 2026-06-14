@@ -20,7 +20,7 @@ should set it (and review auth) for a stable, secure deployment.
 
 | Priority | Variables | Why |
 | --- | --- | --- |
-| **Should set (recommended)** | `PRINTER_USB` | Left unset, LabelJetty auto-detects a connected TSPL printer; pin it so the right device is always used (and to get a clear error rather than a scan). See [Find your printer](setup.md#3-find-your-printer). |
+| **Should set (recommended)** | `PRINTER_USB` | Left unset, LabelJetty auto-detects a connected TSPL printer; pin it so the right device is always used (and to get a clear error rather than a scan). See [Find your printer](advanced-usage.md#find-your-printer). |
 | **Should set (when exposed beyond a trusted LAN)** | `AUTH_MODE=protected` + `AUTH_TOKENS` and/or `AUTH_USERS`, plus a stable `SESSION_SECRET` | The default is **no authentication**. See [Authentication](advanced-usage.md#authentication). |
 | **Should set (for your label stock)** | `DEFAULT_LABEL_WIDTH_MM`, `DEFAULT_LABEL_HEIGHT_MM`, `DEFAULT_DPI` | So jobs that don't specify a size match your actual labels. Add `LABEL_PROFILES` for one-click sizes in the UI. |
 | **Should set (outside Docker)** | absolute `SQLITE_PATH` and `IMAGE_STORAGE_DIRECTORY` | They resolve relative to the working directory; absolute paths avoid surprises. The Docker image already points both at `/data`. |
@@ -32,7 +32,7 @@ should set it (and review auth) for a stable, secure deployment.
 a connected TSPL printer (matches known vendors and USB printer-class devices) - LabelJetty
 uses it when exactly one is found, and lists candidates if several are. To pin a specific
 device, the most robust form is **vendor:product id** (read off `lsusb`, see
-[Find your printer](setup.md#3-find-your-printer)), because - unlike a bus/address - it
+[Find your printer](advanced-usage.md#find-your-printer)), because - unlike a bus/address - it
 survives replugging:
 
 ```sh

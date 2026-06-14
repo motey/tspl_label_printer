@@ -35,15 +35,16 @@ docker compose up -d
 Then open **http://localhost:8888/**.
 
 - **`devices: /dev/bus/usb`** gives the container the printer's USB bus (permissions are governed
-  by a host **udev rule** you set once, see the [Setup guide](https://github.com/motey/LabelJetty/blob/main/docs/setup.md)).
-- **`PRINTER_USB`** selects which USB device is your printer. `vid:<vendor>:pid:<product>` is the
-  robust form; find yours with `lsusb`. This is the only required setting.
+  by a host **udev rule** you set once, see [Manual Docker setup](https://github.com/motey/LabelJetty/blob/main/docs/advanced-usage.md#grant-usb-access)).
+- **`PRINTER_USB`** selects which USB device is your printer. Leave it **unset** to auto-detect a
+  single connected TSPL printer, or pin one with `vid:<vendor>:pid:<product>` (the robust form;
+  find yours with `lsusb`).
 - **`./data:/data`** persists the SQLite job DB and stored images.
 
 Every setting is an env var (and the operational ones can also be edited at runtime from the
 optional in-app settings page, `SETTINGS_UI_ENABLED=true`). The
 [Setup guide](https://github.com/motey/LabelJetty/blob/main/docs/setup.md)
-walks through the printer, the udev rule, and your first label end to end.
+walks through the printer, install, and your first label end to end.
 
 ### Just testing?
 

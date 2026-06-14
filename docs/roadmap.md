@@ -20,7 +20,7 @@ how it all fits together. This page tracks what's planned next.
   connected TSPL printer (matching known vendor ids and USB printer-class devices). It uses
   the printer when exactly one is found, and lists candidates as copy-paste selectors when
   several are. Run `labeljetty-testbench list-printers` to see what it finds. See
-  [Find your printer](setup.md#3-find-your-printer).
+  [Find your printer](advanced-usage.md#find-your-printer).
 
 ## Planned
 
