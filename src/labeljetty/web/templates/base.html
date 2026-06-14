@@ -22,6 +22,12 @@
       {% endif %}
     </span>
   </header>
+  {# Update-available banner. Lazy-loaded; stays empty when up to date. Skipped
+     for unauthenticated visitors (e.g. the login page) so it never triggers an
+     outbound check before login. #}
+  {% if not auth_enabled or (principal and principal.is_authenticated) %}
+  <div id="update-banner" hx-get="/ui/update" hx-trigger="load" hx-swap="innerHTML"></div>
+  {% endif %}
   <main>
     {% block content %}{% endblock %}
   </main>

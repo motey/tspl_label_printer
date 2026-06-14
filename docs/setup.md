@@ -91,3 +91,4 @@ Match your label stock by setting `DEFAULT_LABEL_WIDTH_MM` / `DEFAULT_LABEL_HEIG
   [settings page](configuration.md#settings-via-the-web-ui) once enabled).
 - **[Homebox integration](advanced-usage.md#homebox-integration)** - print inventory labels.
 - **[REST API](advanced-usage.md#the-rest-api)** - drive it from scripts and other machines.
+- **[Updating](updating.md)** - how to move to a new release (the UI flags when one is out).

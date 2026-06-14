@@ -493,6 +493,25 @@ async def ui_homebox_setup(
     return templates.TemplateResponse("homebox_setup.html", ctx)
 
 
+@ui_router.get("/ui/update", response_class=HTMLResponse)
+def ui_update(
+    request: Request, access: Annotated[bool, Depends(require_access)]
+):
+    """Update-available banner fragment — empty unless a newer release exists.
+
+    Sync route (threadpool): check_for_update() may do a blocking GitHub call on
+    a cache miss. Loaded once per page via hx-trigger="load" from base.html."""
+    from labeljetty.update import check_for_update
+
+    info = check_for_update()
+    if not info.update_available:
+        return HTMLResponse("")  # nothing to show → render nothing
+    return templates.TemplateResponse(
+        "_update.html",
+        {"request": request, "update": info, "repo": config.UPDATE_CHECK_REPO},
+    )
+
+
 @ui_router.get("/ui/status", response_class=HTMLResponse)
 async def ui_status(
     request: Request, access: Annotated[bool, Depends(require_access)]

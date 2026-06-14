@@ -251,6 +251,33 @@ async def version() -> VersionResponse:
     return VersionResponse(name=config.APP_NAME, version=get_version())
 
 
+class UpdateResponse(BaseModel):
+    current: str = Field(description="Running release version.")
+    latest: Optional[str] = Field(
+        default=None, description="Latest GitHub release tag, if known."
+    )
+    update_available: bool = Field(
+        description="True when a newer release than the running one is available."
+    )
+    release_url: Optional[str] = Field(
+        default=None, description="GitHub release page for `latest`."
+    )
+    checked: bool = Field(
+        description="False when the update check is disabled or GitHub was unreachable."
+    )
+
+
+# Sync (threadpool) on purpose: check_for_update() may do a blocking GitHub call
+# on a cache miss. require_access — it can trigger an outbound request.
+@fast_api_router.get("/update", tags=["Meta"])
+def update_info(
+    access: Annotated[bool, Depends(require_access)],
+) -> UpdateResponse:
+    from labeljetty.update import check_for_update
+
+    return UpdateResponse(**vars(check_for_update()))
+
+
 # --------------------------------------------------------------------------- #
 #  Job status
 # --------------------------------------------------------------------------- #

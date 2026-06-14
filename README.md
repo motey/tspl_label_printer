@@ -98,6 +98,7 @@ The architecture and trade-offs are in **[Design](docs/design.md)**.
 | --- | --- |
 | **[Setup guide](docs/setup.md)** | Start here: printer to first label - get a printer, install (the one-liner), verify, configure. |
 | **[Configuration](docs/configuration.md)** | Every setting (must / should / optional) and the `PRINTER_USB` selector forms. |
+| **[Updating](docs/updating.md)** | Move to a new release (Compose, `docker run`, installer, Watchtower); the UI flags when one is out. |
 | **[Advanced usage](docs/advanced-usage.md)** | Non-Docker install, authentication, the REST API, text auto-fit, Homebox, Docker tags/arches. |
 | **[Hardware](docs/hardware.md)** | Which cheap 420B-class printer to buy and where (rough, LLM-sourced stub for now). |
 | **[Design](docs/design.md)** | Architecture, the moving parts, and the reasoning behind the design. |

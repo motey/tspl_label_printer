@@ -67,6 +67,8 @@ PRINTER_USB=vid:2d37:pid:62de
 | `SQLITE_PATH` | `./printjobs.sqlite` | Job-queue database (relative to the working directory) |
 | `IMAGE_STORAGE_DIRECTORY` | `./../images` | Where uploaded files are stored (relative to cwd) |
 | `DELETE_OLD_JOBS_AFTER_DAYS` | `100` | Retention for old jobs and their files |
+| `UPDATE_CHECK_ENABLED` | `true` | Show an "update available" banner by checking GitHub for a newer release (one cached outbound call). Set `false` for offline deployments. See [Updating](updating.md). |
+| `UPDATE_CHECK_REPO` | `motey/LabelJetty` | GitHub `owner/repo` queried for the latest release (set this on a fork) |
 | `DEFAULT_LABEL_WIDTH_MM` | `100` | Default label width when a job doesn't specify one |
 | `DEFAULT_LABEL_HEIGHT_MM` | `30` | Default label height |
 | `DEFAULT_DPI` | `203` | Default printer resolution |

@@ -126,6 +126,24 @@ class Config(BaseSettings):
         description="Old job entries in the database will be removed with associated files.",
         json_schema_extra=_ui("Maintenance", label="Delete old jobs after (days)"),
     )
+    # --- Update check (optional, outbound) ---------------------------------- #
+    # Compares the running version against the latest GitHub release and shows an
+    # "update available" banner in the web UI. Updating itself is still manual
+    # (docker compose pull && up -d — see docs/updating.md); this only notifies.
+    UPDATE_CHECK_ENABLED: bool = Field(
+        default=True,
+        description=(
+            "Check GitHub for a newer release and show an 'update available' banner "
+            "in the web UI. One outbound HTTPS call to the public GitHub API, cached "
+            "for hours. Turn off for offline/air-gapped deployments."
+        ),
+        json_schema_extra=_ui("Maintenance", label="Check for updates"),
+    )
+    UPDATE_CHECK_REPO: str = Field(
+        default="motey/LabelJetty",
+        description="GitHub 'owner/repo' queried for the latest release (set this on a fork).",
+        json_schema_extra=_ui("Maintenance", label="Update check repo (owner/repo)"),
+    )
     # Default label geometry — used when a print job does not specify its own.
     DEFAULT_LABEL_WIDTH_MM: int = Field(
         default=100, json_schema_extra=_ui("Label defaults", label="Default width (mm)")

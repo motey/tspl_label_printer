@@ -69,6 +69,18 @@ docker run --rm -p 8888:8888 \
 
 Multi-arch (`linux/amd64` + `linux/arm64`, so 64-bit Raspberry Pi 3/4/5 works).
 
+## Updating
+
+The web UI shows an **update-available banner** when a newer release is out. To apply it:
+
+```sh
+docker compose pull && docker compose up -d
+```
+
+Your `./data` volume carries over. Full instructions (plain `docker run`, the installer,
+Watchtower auto-updates) are in
+[Updating](https://github.com/motey/LabelJetty/blob/main/docs/updating.md).
+
 ## Heads-up
 
 - **No authentication by default** - fine on a trusted home LAN, but turn on `AUTH_MODE=protected`

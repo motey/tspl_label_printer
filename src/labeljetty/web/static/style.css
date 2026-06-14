@@ -196,3 +196,18 @@ table.profiles input[name="lp_dpi"] { max-width: 7rem; }
            color: var(--text); border-radius: var(--radius); padding: 0.35rem 0.7rem; cursor: pointer; }
 .add-row:hover { border-color: var(--accent); }
 .printer-custom { margin-top: 0.4rem; }
+
+/* Update-available banner (lazy-loaded into #update-banner under the header). */
+.update-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0.6rem 1rem;
+  background: color-mix(in srgb, var(--accent) 14%, var(--panel));
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+.update-banner .update-icon { color: var(--accent); font-weight: 700; }
+.update-banner .update-current { color: var(--muted); }
