@@ -51,8 +51,9 @@ curl -fsSL https://raw.githubusercontent.com/motey/LabelJetty/main/deploy/instal
 less install.sh && bash install.sh
 ```
 
-It targets the reference Vretti 420B by default; override with `PRINTER_USB=...`,
-`LABELJETTY_DIR=...`, or `LABEL_WIDTH_MM/HEIGHT_MM/DPI` (find your id with `lsusb`).
+It **auto-detects your connected printer** (and writes a matching udev rule), so there's nothing
+to configure for a single printer. Tunables if you need them: `PRINTER_USB=...` (pin a specific
+device when several are attached), `LABELJETTY_DIR=...`, `LABEL_WIDTH_MM/HEIGHT_MM/DPI`.
 
 > **New here, or want to do it by hand?** The **[Setup guide](docs/setup.md)** walks through the
 > Docker Compose deployment step by step - picking a printer, the udev rule, the

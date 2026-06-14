@@ -8,14 +8,18 @@
 # It will:
 #   1. Install Docker + the compose plugin (if missing) and start it.
 #   2. Add you to the `docker` and `plugdev` groups.
-#   3. Install a udev rule so the USB printer is reachable.
+#   3. Detect the connected USB printer(s) and install a matching udev rule.
 #   4. Write a docker-compose.yml under ~/labeljetty (override with LABELJETTY_DIR).
 #   5. Pull the image and bring the stack up.
 #   6. Print how to reach the UI and what to configure next.
 #
+# Printer selection: LabelJetty auto-detects a connected TSPL printer, so PRINTER_USB is
+# left UNSET by default. Set it only to pin a specific device (e.g. when several printers
+# are attached). See tunables below.
+#
 # Tunables (export before running, or prefix the curl|bash line):
 #   LABELJETTY_DIR   install/compose directory      (default: $HOME/labeljetty)
-#   PRINTER_USB      printer selector               (default: vid:2d37:pid:62de — Vretti 420B)
+#   PRINTER_USB      pin a specific printer         (default: unset → auto-detect)
 #   LABEL_WIDTH_MM / LABEL_HEIGHT_MM / LABEL_DPI     (default: 57 / 32 / 203)
 #
 # "Any Debian-based system" is best-effort — tested target is Raspberry Pi OS (64-bit).
@@ -44,7 +48,7 @@ TARGET_HOME="$(getent passwd "$TARGET_USER" | cut -d: -f6)"
 
 # ---- config -----------------------------------------------------------------------------
 LABELJETTY_DIR="${LABELJETTY_DIR:-$TARGET_HOME/labeljetty}"
-PRINTER_USB="${PRINTER_USB:-vid:2d37:pid:62de}"
+PRINTER_USB="${PRINTER_USB:-}"            # empty → let LabelJetty auto-detect
 LABEL_WIDTH_MM="${LABEL_WIDTH_MM:-57}"
 LABEL_HEIGHT_MM="${LABEL_HEIGHT_MM:-32}"
 LABEL_DPI="${LABEL_DPI:-203}"
@@ -52,7 +56,7 @@ LABEL_DPI="${LABEL_DPI:-203}"
 info "LabelJetty installer"
 echo "    user:      $TARGET_USER"
 echo "    directory: $LABELJETTY_DIR"
-echo "    printer:   $PRINTER_USB"
+echo "    printer:   ${PRINTER_USB:-<auto-detect>}"
 
 # ---- 0. sanity checks -------------------------------------------------------------------
 command -v apt-get >/dev/null 2>&1 || warn "Not a Debian/apt system — continuing best-effort (YMMV)."
@@ -79,30 +83,61 @@ fi
 info "Adding '$TARGET_USER' to docker + plugdev groups (takes effect on next login)."
 $SUDO usermod -aG docker,plugdev "$TARGET_USER" || warn "Could not modify groups for $TARGET_USER."
 
-# ---- 3. udev rule -----------------------------------------------------------------------
+# ---- 3. detect printer(s) + install udev rule -------------------------------------------
+# Find connected USB printers the same way LabelJetty's auto-discovery does: anything that
+# advertises the USB printer interface class (07), plus the known TSPL vendor 2d37 (the
+# reference Vretti/Poskey 420B), in case it doesn't expose class 07. Pure sysfs read.
+declare -a PRINTERS=()
+shopt -s nullglob
+for iface in /sys/bus/usb/devices/*:*/bInterfaceClass; do
+  [ -r "$iface" ] || continue
+  [ "$(cat "$iface")" = "07" ] || continue
+  devdir="$(dirname "$iface")"; devdir="${devdir%:*}"
+  vid="$(cat "$devdir/idVendor" 2>/dev/null || true)"
+  pid="$(cat "$devdir/idProduct" 2>/dev/null || true)"
+  [ -n "$vid" ] && [ -n "$pid" ] && PRINTERS+=("$vid:$pid")
+done
+for devdir in /sys/bus/usb/devices/*; do
+  [ -r "$devdir/idVendor" ] || continue
+  [ "$(cat "$devdir/idVendor")" = "2d37" ] || continue
+  pid="$(cat "$devdir/idProduct" 2>/dev/null || true)"
+  [ -n "$pid" ] && PRINTERS+=("2d37:$pid")
+done
+shopt -u nullglob
+# de-duplicate
+if [ "${#PRINTERS[@]}" -gt 0 ]; then
+  mapfile -t PRINTERS < <(printf '%s\n' "${PRINTERS[@]}" | sort -u)
+fi
+
+if [ "${#PRINTERS[@]}" -gt 0 ]; then
+  info "Detected USB printer(s): ${PRINTERS[*]}"
+  [ "${#PRINTERS[@]}" -gt 1 ] && warn "Several printers present — auto-detect won't guess. Pin one with PRINTER_USB=vid:..:pid:.."
+else
+  warn "No USB printer detected right now — writing a rule for the reference 420B (2d37:62de)."
+  warn "Plug the printer in & power it on; if it isn't a 420B, edit /etc/udev/rules.d/99-tspl-printer.rules."
+  PRINTERS=("2d37:62de")
+fi
+
 info "Installing udev rule for raw USB printer access."
-$SUDO tee /etc/udev/rules.d/99-tspl-printer.rules >/dev/null <<'EOF'
-# TSPL label printer — allow the plugdev group to access it over raw USB.
-# Reference Vretti/Poskey 420B is 2d37:62de; adjust idVendor/idProduct for other printers.
-SUBSYSTEM=="usb", ATTRS{idVendor}=="2d37", ATTRS{idProduct}=="62de", MODE="0660", GROUP="plugdev"
-EOF
+{
+  echo "# TSPL label printer(s) — allow the plugdev group raw USB access. Managed by deploy/install.sh."
+  for vp in "${PRINTERS[@]}"; do
+    echo "SUBSYSTEM==\"usb\", ATTRS{idVendor}==\"${vp%:*}\", ATTRS{idProduct}==\"${vp#*:}\", MODE=\"0660\", GROUP=\"plugdev\""
+  done
+} | $SUDO tee /etc/udev/rules.d/99-tspl-printer.rules >/dev/null
 $SUDO udevadm control --reload-rules >/dev/null 2>&1 || true
 $SUDO udevadm trigger >/dev/null 2>&1 || true
-
-# Best-effort printer presence check (informational only).
-if command -v lsusb >/dev/null 2>&1; then
-  if lsusb | grep -qiE '2d37:62de'; then
-    info "Detected the reference printer (2d37:62de) on USB."
-  elif lsusb | grep -qiE '2d37:'; then
-    warn "A Poskey-class device (vendor 2d37) is present but not 62de — check PRINTER_USB."
-  else
-    warn "No 2d37:* printer seen on USB. Plug it in & power it on, or set PRINTER_USB (run 'lsusb')."
-  fi
-fi
 
 # ---- 4. compose project -----------------------------------------------------------------
 info "Setting up compose project in $LABELJETTY_DIR"
 mkdir -p "$LABELJETTY_DIR/data"
+# Only emit a PRINTER_USB line when the user pinned one; otherwise leave it for auto-detect.
+if [ -n "$PRINTER_USB" ]; then
+  PRINTER_USB_LINE="      PRINTER_USB: ${PRINTER_USB}"
+else
+  PRINTER_USB_LINE="      # PRINTER_USB left unset: LabelJetty auto-detects the printer. Pin it (e.g.
+      #   PRINTER_USB: vid:2d37:pid:62de) only if you have several printers attached."
+fi
 COMPOSE_FILE="$LABELJETTY_DIR/docker-compose.yml"
 if [ -f "$COMPOSE_FILE" ]; then
   warn "Existing $COMPOSE_FILE kept (your settings are preserved). Delete it to regenerate."
@@ -119,7 +154,7 @@ services:
     devices:
       - /dev/bus/usb:/dev/bus/usb      # the printer's USB bus
     environment:
-      PRINTER_USB: ${PRINTER_USB}
+${PRINTER_USB_LINE}
       DEFAULT_LABEL_WIDTH_MM: "${LABEL_WIDTH_MM}"
       DEFAULT_LABEL_HEIGHT_MM: "${LABEL_HEIGHT_MM}"
       DEFAULT_DPI: "${LABEL_DPI}"
@@ -159,7 +194,8 @@ cat <<EOF
   • Match your label stock: edit DEFAULT_LABEL_WIDTH_MM / HEIGHT_MM / DPI in
         $COMPOSE_FILE
     then  (cd "$LABELJETTY_DIR" && docker compose up -d)   to apply.
-  • Wrong/again "no printer"? set PRINTER_USB in the compose file ('lsusb' to find vid:pid).
+  • Printer not found? Either it isn't plugged in/powered, or your image predates
+    auto-detection — set PRINTER_USB in the compose file ('lsusb' to find vid:pid).
   • Exposing it beyond a trusted LAN? enable AUTH_MODE=protected (see the compose comments
     and docs: advanced-usage.md#authentication).
   • Homebox user? set HOMEBOX_URL + HOMEBOX_API_KEY to print inventory labels.
