@@ -33,7 +33,8 @@ for printing inventory labels.
 - **Mobile-first web UI** - print every label type, live **preview** before you waste a label,
   and watch the job queue + printer/worker status update live.
 - **REST API** (FastAPI) with a persistent **job queue** (SQLite) and a single background
-  **worker** that owns the printer and prints one job at a time. Swagger docs at `/docs`.
+  **worker** that owns the printer and prints one job at a time. Live API docs at `/docs`
+  (Swagger), `/redoc`, and `/openapi.json`.
   → [REST API reference](docs/advanced-usage.md#the-rest-api)
 - **Auth when you want it** - multi-token (for machines) and multi-user login (for humans),
   off by default for trusted-LAN convenience. Designed [OIDC-ready](docs/roadmap.md#oidc--sso-authentication)

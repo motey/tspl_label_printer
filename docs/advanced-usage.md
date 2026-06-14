@@ -135,10 +135,17 @@ Open `http://<host>:<port>/` for the mobile-first UI. It covers everything the A
 - **Live preview** - render the label bitmap and see it before you print, saving wasted stock.
 - **Live status** - the job queue and the printer/worker status poll and update in place.
 
-Interactive API docs (Swagger UI) are served at `/docs`, and the OpenAPI schema at
-`/openapi.json`.
-
 ## The REST API
+
+> **Interactive API docs.** The running service serves live, auto-generated API docs - the
+> quickest way to explore and try every endpoint:
+> | URL | What it is |
+> | --- | --- |
+> | [`/docs`](http://localhost:8888/docs) | **Swagger UI** - browse and run requests in the browser |
+> | [`/redoc`](http://localhost:8888/redoc) | ReDoc - a clean, readable reference view |
+> | [`/openapi.json`](http://localhost:8888/openapi.json) | the raw OpenAPI schema (for codegen / Postman / etc.) |
+>
+> (In `protected` mode these are behind auth, like every other route.)
 
 All routes are under the `/api` prefix. In `protected` mode, send an API token as
 `-H "Authorization: Bearer <token>"` (see [Authentication](#authentication)).

@@ -47,7 +47,7 @@ class FastApiAppContainer:
         # import __main__
 
         self.app = FastAPI(
-            title="TSPL Printer API",
+            title="LabelJetty API",
             version=get_version(),
             lifespan=self._app_lifespan,
         )
