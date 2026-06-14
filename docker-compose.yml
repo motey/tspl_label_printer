@@ -1,0 +1,38 @@
+# LabelJetty - example Docker Compose deployment.
+#
+# Quick start:
+#   1. Set PRINTER_USB to your printer (find it with `lsusb`, e.g. vid:2d37:pid:62de).
+#   2. Make sure the host has a udev rule granting USB access (see docs/configuration.md).
+#   3. docker compose up -d
+#   4. Open http://localhost:8888/
+#
+# Every LabelJetty setting is an environment variable - see docs/configuration.md
+# for the full list (and which ones you should set before exposing this).
+services:
+  labeljetty:
+    image: motey/labeljetty:latest
+    container_name: labeljetty
+    restart: unless-stopped
+    ports:
+      - "8888:8888"
+    devices:
+      # Pass the printer's USB bus through to the container. You can narrow this to a
+      # single device node, e.g. /dev/bus/usb/001/015:/dev/bus/usb/001/015 (changes on replug).
+      - /dev/bus/usb:/dev/bus/usb
+    environment:
+      # The only required setting. Find your ids with `lsusb`.
+      PRINTER_USB: vid:2d37:pid:62de
+      # Match your label stock so jobs without an explicit size print correctly.
+      DEFAULT_LABEL_WIDTH_MM: "57"
+      DEFAULT_LABEL_HEIGHT_MM: "32"
+      DEFAULT_DPI: "203"
+      # No auth by default. Uncomment to require credentials (see docs/advanced-usage.md#authentication):
+      # AUTH_MODE: protected
+      # AUTH_TOKENS: '[{"name":"ci","token":"choose-a-long-random-secret"}]'
+      # SESSION_SECRET: another-long-random-string
+      # Optional Homebox integration (see docs/advanced-usage.md#homebox-integration):
+      # HOMEBOX_URL: https://box.example.com
+      # HOMEBOX_API_KEY: hb_xxxxxxxxxxxx
+    volumes:
+      # Persists the SQLite job DB and stored images (container points /data at these).
+      - ./data:/data

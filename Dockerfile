@@ -38,12 +38,19 @@ RUN uv sync --frozen --no-dev --no-editable
 
 ENV PATH="/app/.venv/bin:$PATH"
 
+# LOG_LEVEL is baked in at build time so the channel sets verbosity: production
+# releases (:latest / :<version>) ship at INFO, while the dev/beta channels keep
+# DEBUG. CI passes this per channel (see .github/workflows/docker*.yml). The app
+# default is DEBUG, and a runtime `-e LOG_LEVEL=...` still overrides this.
+ARG LOG_LEVEL=DEBUG
+
 # Container-friendly defaults (override via env/-e). Data lives under /data so it
 # can be a mounted volume; bind to all interfaces inside the container.
 ENV SERVER_LISTENING_HOST=0.0.0.0 \
     SERVER_LISTENING_PORT=8888 \
     SQLITE_PATH=/data/printjobs.sqlite \
-    IMAGE_STORAGE_DIRECTORY=/data/images
+    IMAGE_STORAGE_DIRECTORY=/data/images \
+    LOG_LEVEL=${LOG_LEVEL}
 
 RUN mkdir -p /data
 VOLUME ["/data"]

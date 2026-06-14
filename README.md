@@ -45,7 +45,47 @@ for printing inventory labels.
 
 The image is published to Docker Hub as
 [`motey/labeljetty`](https://hub.docker.com/r/motey/labeljetty) and is the recommended way to
-deploy on an always-on box.
+deploy on an always-on box. For a real deployment, use **Docker Compose** - there's a ready-made
+[`docker-compose.yml`](docker-compose.yml) in this repo:
+
+```yaml
+services:
+  labeljetty:
+    image: motey/labeljetty:latest
+    restart: unless-stopped
+    ports:
+      - "8888:8888"
+    devices:
+      - /dev/bus/usb:/dev/bus/usb      # the printer's USB bus
+    environment:
+      PRINTER_USB: vid:2d37:pid:62de   # the only required setting; find yours with `lsusb`
+    volumes:
+      - ./data:/data                   # persists the job DB + stored images
+```
+
+```sh
+docker compose up -d
+```
+
+Then open **http://localhost:8888/** for the web UI.
+
+What the pieces do:
+
+- **`devices: /dev/bus/usb`** gives the container the printer's USB bus. Permissions are still
+  governed by a host **udev rule** (see
+  [Configuration → Setting up the printer](docs/configuration.md#setting-up-the-printer)). You can
+  scope this down to a single device node.
+- **`PRINTER_USB`** selects *which* USB device is your printer. `vid:<vendor>:pid:<product>` is the
+  robust form (survives replugging); find yours with `lsusb`. This is the only required setting.
+- **`./data:/data`** persists the SQLite job DB and stored images. The container already points
+  `SQLITE_PATH` / `IMAGE_STORAGE_DIRECTORY` at `/data` and binds to `0.0.0.0:8888`.
+
+The committed [`docker-compose.yml`](docker-compose.yml) also has commented-out blocks for label
+geometry, [authentication](docs/advanced-usage.md#authentication), and
+[Homebox](docs/advanced-usage.md#homebox-integration).
+
+<details>
+<summary><b>Just kicking the tyres?</b> A one-off <code>docker run</code> (no compose file needed)</summary>
 
 ```sh
 docker run --rm -p 8888:8888 \
@@ -55,23 +95,11 @@ docker run --rm -p 8888:8888 \
   motey/labeljetty:latest
 ```
 
-Then open **http://localhost:8888/** for the web UI.
+This is fine for a quick test; prefer Compose for anything you want to keep running.
+</details>
 
-What the flags do:
-
-- **`--device=/dev/bus/usb`** - gives the container the printer's USB bus. Permissions are
-  still governed by a host **udev rule** (see
-  [Configuration → Setting up the printer](docs/configuration.md#setting-up-the-printer)). You can scope this
-  down to a single device node.
-- **`-e PRINTER_USB=...`** - selects *which* USB device is your printer. `vid:<vendor>:pid:<product>`
-  is the robust form (survives replugging); find yours with `lsusb`. This is the only required
-  setting.
-- **`-v ...:/data`** - persists the SQLite job DB and stored images. The container already points
-  `SQLITE_PATH` / `IMAGE_STORAGE_DIRECTORY` at `/data` and binds to `0.0.0.0:8888`.
-
-Every setting is an env var (`-e KEY=value`) - see the full list in
-[Configuration](docs/configuration.md). Image tags
-(`latest` / `beta` / `X.Y.Z` / `dev`) and supported architectures are documented in
+Every setting is an env var - see the full list in [Configuration](docs/configuration.md). Image
+tags (`latest` / `beta` / `X.Y.Z` / `dev`) and supported architectures are documented in
 [Advanced usage → Docker](docs/advanced-usage.md#docker-tags--architectures).
 
 > The full **[configuration reference](docs/configuration.md)** (and how to set up the printer)

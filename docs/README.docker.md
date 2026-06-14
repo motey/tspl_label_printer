@@ -9,7 +9,42 @@ built in.
 
 <a href="https://github.com/motey/LabelJetty"><img src="https://raw.githubusercontent.com/motey/LabelJetty/main/docs/labejetti_screenshot.png" alt="LabelJetty web UI" width="250"></a>
 
-## Quick start
+## Quick start (Docker Compose)
+
+Compose is the recommended way to deploy:
+
+```yaml
+services:
+  labeljetty:
+    image: motey/labeljetty:latest
+    restart: unless-stopped
+    ports:
+      - "8888:8888"
+    devices:
+      - /dev/bus/usb:/dev/bus/usb      # the printer's USB bus
+    environment:
+      PRINTER_USB: vid:2d37:pid:62de   # the only required setting; find yours with `lsusb`
+    volumes:
+      - ./data:/data                   # persists the job DB + stored images
+```
+
+```sh
+docker compose up -d
+```
+
+Then open **http://localhost:8888/**.
+
+- **`devices: /dev/bus/usb`** gives the container the printer's USB bus (permissions are governed
+  by a host udev rule).
+- **`PRINTER_USB`** selects which USB device is your printer. `vid:<vendor>:pid:<product>` is the
+  robust form; find yours with `lsusb`. This is the only required setting.
+- **`./data:/data`** persists the SQLite job DB and stored images.
+
+Every setting is an env var.
+
+### Just testing?
+
+A one-off `docker run` (no compose file) is fine for a quick try:
 
 ```sh
 docker run --rm -p 8888:8888 \
@@ -18,16 +53,6 @@ docker run --rm -p 8888:8888 \
   -v "$(pwd)/data:/data" \
   motey/labeljetty:latest
 ```
-
-Then open **http://localhost:8888/**.
-
-- **`--device=/dev/bus/usb`** gives the container the printer's USB bus (permissions are governed
-  by a host udev rule).
-- **`-e PRINTER_USB=...`** selects which USB device is your printer. `vid:<vendor>:pid:<product>`
-  is the robust form; find yours with `lsusb`. This is the only required setting.
-- **`-v ...:/data`** persists the SQLite job DB and stored images.
-
-Every setting is an env var (`-e KEY=value`).
 
 ## Tags
 
