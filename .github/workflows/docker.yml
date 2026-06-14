@@ -63,8 +63,12 @@ jobs:
           cache-to: type=gha,mode=max
 
       # Push the slim Docker Hub overview/README (links back to GitHub for full docs).
+      # Cosmetic — the image is already pushed above, so never fail a release on it.
+      # Needs DOCKERHUB_TOKEN to be a Read/Write/Delete-scoped PAT (the description
+      # API rejects narrower tokens with 403); image push works with any read/write.
       - name: Update Docker Hub description
-        uses: peter-evans/dockerhub-description@v4
+        continue-on-error: true
+        uses: peter-evans/dockerhub-description@v5
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
