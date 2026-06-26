@@ -60,8 +60,9 @@ These are ideas, not commitments (carried over from [Design → Non-goals](desig
 - **Multi-printer support** - the architecture currently assumes a single printer.
 - **Broader hardware coverage** - verified support for printers other than the reference Vretti
   420B. This grows from user reports; see [Hardware](hardware.md) and please share your results.
-- **Batch printing**: some kind of simple template designer and print batches of labels given sequential numbers or a csv list to fill out the template.
-
+- **Batch printing**: Print a label multiple times
+- **Batch template printing**: some kind of simple template designer to print batches of labels given sequential numbers or a csv list to fill out the template.
+- **Image image manipulation** Let the user crop and/or rotate an uploaded image to better fit a label
 
 ## Explicit non-goals
 
